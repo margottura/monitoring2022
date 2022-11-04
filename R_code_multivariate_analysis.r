@@ -30,4 +30,11 @@ pdf("multivar.pdf")
 plot(multivar)
 ordiellipse(multivar, type, col=c("black","red","green","blue"), kind = "ehull", lwd=3)
 ordispider(multivar, type, col=c("black","red","green","blue"), label = T)
-dev.off()666
+dev.off()
+
+#Exercise: export a pdf
+#with only the multivar plot 
+#5 minutes
+pdf("multivar2.pdf")
+plot(multivar)
+dev.off()
