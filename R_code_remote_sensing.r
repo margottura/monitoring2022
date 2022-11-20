@@ -101,3 +101,62 @@ plotRGB(p224r63_2011, r=3, g=4, b=2, stretch="hist")
 plotRGB(p224r63_2011, r=3, g=2, b=4, stretch="lin")
 plotRGB(p224r63_2011, r=3, g=2, b=4, stretch="hist")
 
+# Now let's go back in time:
+
+p224r63_1988 <- brick("p224r63_1988_masked.grd")
+p224r63_2011 <- brick("p224r63_2011_masked.grd")
+
+p224r63_1988 
+p224r63_2011 
+
+# Now let's compare the two years: 
+
+plotRGB(p224r63_1988, r=3, g=2, b=1, stretch="Lin")
+plotRGB(p224r63_2011, r=3, g=2, b=1, stretch="Lin")
+
+plotRGB(p224r63_1988, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+plotRGB(p224r63_1988, r=3, g=4, b=2, stretch="Lin")
+plotRGB(p224r63_2011, r=3, g=4, b=2, stretch="Lin")
+
+plotRGB(p224r63_1988, r=3, g=2, b=4, stretch="Lin")
+plotRGB(p224r63_2011, r=3, g=2, b=4, stretch="Lin")
+
+# Excercise: make a multiframe with 2 rows and 1 column
+# Plotting the 1988 and the 2011 images
+par(mfrow=c(2,1))
+plotRGB(p224r63_1988, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+# Now we calculate the difference between the images
+# Multitemporal analysis
+
+difnir <- p224r63_1988[[4]]-p224r63_2011[[4]]
+
+cl <- colorRampPalette(c('midnightblue','violet','powderblue'))(100)
+plot(difnir, col=cl)
+
+# NIR-RED=DVI (difference vegetation index), the higer the the index, the higher the vegetation:
+
+# Recent DVI (2011)
+
+dvi2011 <- p224r63_2011[[4]]-p224r63_2011[[3]]
+plot(dvi2011)
+
+difdvi <- dvi1988-dvi2011
+
+
+# Old DVI (1988)
+dvi1988 <- p224r63_1988[[4]]-p224r63_1988[[3]]
+plot(dvi1988)
+
+# Now let's compare the two images
+par(mfrow=c(2,1))
+plot(dvi1988)
+plot(dvi2011)
+
+difdvi <- dvi1988-dvi2011
+
+cl <- colorRampPalette(c('midnightblue','violet', 'yellow'))(100)
+plot(difdvi, col=cl)
