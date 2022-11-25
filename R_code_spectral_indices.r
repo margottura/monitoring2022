@@ -5,6 +5,7 @@
 library(raster)
 
 # Setting the folder as usual, and taking the data we need
+setwd("C:/Documenti/Laurea magistrale/Monitoring ecosystems change and functioning")
 
 l1992 <- brick("defor1.png")
 
