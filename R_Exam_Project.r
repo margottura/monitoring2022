@@ -140,7 +140,7 @@ plot(italydmpstacked)
 
 # Globally:
 difference <- dmpstacked[[2]]-dmpstacked[[1]]
-plot(difference)
+difference
 
 Italy_difference <- italydmpstacked[[2]]-italydmpstacked[[1]]
 Italy_difference
