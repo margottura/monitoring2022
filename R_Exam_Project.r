@@ -85,8 +85,6 @@ globaldmp2023
 
 ggsave(filename = "global_DMP_2023.png" , plot = globaldmp2023)
 
-Italy <- c(6, 21, 36, 48) 
-
 italydmp2023 <- crop(dmp_2023, Italy)
 
 italydmp2023
