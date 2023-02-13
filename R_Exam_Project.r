@@ -28,7 +28,6 @@ library(RStoolbox) # RS functions
 library(viridis) # legends - color gamut
 library(patchwork) # multiframe for ggplot
 library(rgdal) # spatial software - sp package
-library(dplyr)
 
 # Now we set our working directory:
 
