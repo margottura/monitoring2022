@@ -126,6 +126,8 @@ import
 dmpstacked <- stack(import)
 dmpstacked
 
+plot(dmpstacked)
+
 # Lets' do the same for Italy
 
 italydmpstacked <- crop(dmpstacked, Italy)
