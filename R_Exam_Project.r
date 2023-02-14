@@ -136,7 +136,7 @@ italyndvi2023
 
 # Let's plot the graph of 2023 for Italy
 
-italyndvi2023_plot <- ggplot() + geom_raster(italyndvi2014, mapping=aes(x=x, y=y, fill= Normalized.Difference.Vegetation.Index.333M )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI 2023 Italy")
+italyndvi2023_plot <- ggplot() + geom_raster(italyndvi2014, mapping=aes(x=x, y=y, fill= Normalized.Difference.Vegetation.Index.333m )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI 2023 Italy")
 italyndvi2023_plot <- italyndvi2014_plot + labs(fill= "NDVI")
 italyndvi2023_plot
 
