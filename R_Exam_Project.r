@@ -185,3 +185,16 @@ ggsave(filename = "NDVI_Italy_difference.png" , plot = italyndvidifference_plot)
 ndvitrend <- plot(italyndvi2014, italyndvi2023, xlab="Italy NDVI 2014", ylab="Italy NDVI 2023", main="Trend of Italy NDVI")
 abline(0,1, col="red")
 ggsave(filename = "NDVI_Italy_Trend.png" , plot = ndvitrend)
+
+# Now we can look at the correlation trand between DNVI and DMP
+# For 2014
+
+DNVI_DMP_trend_first <- plot(italyndvi2014, italydmp2014, xlab="Italy NDVI 2014", ylab="Italy DMP 2014", main="Trend of NDVI and DMP 2014")
+abline(0,1, col="red")
+
+
+# For 2023
+
+DNVI_DMP_trend_second <- plot(italyndvi2023, italydmp2023, xlab="Italy NDVI 2023", ylab="Italy DMP 2014", main="Trend of NDVI and DMP 2023")
+abline(0,1, col="red")
+
