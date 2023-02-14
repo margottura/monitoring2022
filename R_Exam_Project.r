@@ -2,12 +2,12 @@
 # 2022/2023
 # Margot Tura
 
-# First, I downloaded data from copernicus about Dry Mass Productivity
-# DMP 300m V1
+# First, I downloaded data from copernicus about Dry Mass Productivity DMP 300m 
+# and about the NDVI 300m
 # The goal of the analysis is to see how the DMP and the NDVI changed during 
 # the last 8 years in Italy
-# To do so, I analyzed the data from the 10/01/2014 (the oldest data available)
-# and from the 10/01/2023 (the latest data available)
+# To do so, I analyzed the data from January 2014 (the oldest avaliable) 
+# and January 2023 (the latest available)
 
 # Let's open the packages we need from our library:
 
