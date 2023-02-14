@@ -63,7 +63,7 @@ italydmp2023_plot <- ggplot() + geom_raster(italydmp2023, mapping=aes(x=x, y=y, 
 italydmp2023_plot <- italydmp2023_plot + labs(fill= "DMP")
 italydmp2023_plot
 
-ggsave(filename = "global_DMP_2014_Italy.png" , plot = italydmp2023_plot)
+ggsave(filename = "global_DMP_2023_Italy.png" , plot = italydmp2023_plot)
 
 # Now let's look at the DMP plots from 2014 and 2023 together to compare them:
 
@@ -74,7 +74,7 @@ ggsave(filename = "Italy_DMP_comparison.png" , plot = Italy_DMP_comparison)
 
 # Now let's look at the difference between the year 2014 and 2022:
 
-rlist <- list.files(pattern= "dmp")
+rlist <- list.files(pattern= "dmp2")
 rlist 
 
 import <- lapply(rlist, raster)
