@@ -159,7 +159,7 @@ Australia_fcover2020
 # Let's plot the graphs
 #2019
 
-fcover019_plot <- ggplot() + geom_raster(Australia_fcover2019, mapping=aes(x=x, y=y, fill= Fraction.of.green.Vegetation.Cover.333m )) + scale_fill_viridis(option="rocket") + ggtitle("FCOVER 2019")
+fcover2019_plot <- ggplot() + geom_raster(Australia_fcover2019, mapping=aes(x=x, y=y, fill= Fraction.of.green.Vegetation.Cover.333m )) + scale_fill_viridis(option="rocket") + ggtitle("FCOVER 2019")
 
 #Let's add the legend:
 fcover2019_plot <- fcover2019_plot + labs(fill= "FCOVER")
