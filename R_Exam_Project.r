@@ -6,7 +6,6 @@
 # occured in Australia in the period June 2019- May 2020
 # To do so, I analyzed the Fcover and the NDVI data from the January 2019, so the beginning of the year, and 
 # and from December 2020, at the end of the year
-# I also looked at the data about fire disturbance from October 2019, when the fires were happening
 # First of all, we open the packages from our library:
 
 library(ncdf4) # reading .nc files
@@ -20,34 +19,6 @@ library(rgdal) # spatial software - sp package
 # Now we set our working directory:
 
 setwd("C:/Documenti/Laurea magistrale/Monitoring ecosystems change and functioning/Exam Project")
-
-######################
-
-#Fire Disturbance
-
-firedisturbance2019 <- raster("firedisturbance.nc")
-
-# Let's take a look at our data:
-firedisturbance2019
-
-# Now let's crop our data to only look at Australia, using the coordinates
-Australia <- c(110, 160, -45, -10) 
-
-Australia_firedisturbance <- crop(firedisturbance2019, Australia)
-Australia_firedisturbance
-
-#Let's plot the graph:
-firedisturbance_plot <- ggplot() + geom_raster(Australia_firedisturbance, mapping=aes(x=x, y=y, fill= CP_DEKAD )) + scale_fill_viridis(option="rocket") + ggtitle("Fire Disturbance 2019")
-
-#Let's add the legend:
-firedisturbance_plot <- firedisturbance_plot + labs(fill= "Fire disturbance")
-firedisturbance_plot
-
-# Now we save the new plot
-ggsave(filename = "firedisturbance.png" , plot = firedisturbance_plot)
-
-
-#########################
 
 #NDVI
 
