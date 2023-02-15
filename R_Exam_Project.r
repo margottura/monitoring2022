@@ -31,6 +31,9 @@ dmp_2023 <- raster("dmp2023.nc")
 ndvi_2014 <- raster("ndvi2014.nc")
 ndvi_2023 <- raster("ndvi2023.nc")
 
+lai_2014 <- raster("lai2014.nc")
+lai_2023 <- raster("lai2023.nc")
+
 # Let's start with DMP for the year 2014:
 # Let's take a look at our data
 
@@ -104,7 +107,6 @@ ggsave(filename = "DMP_Italy_difference.png" , plot = italydmpdifference_plot)
 
 dmptrend <- plot(italydmp2014, italydmp2023, xlab="Italy DMP 2014", ylab="Italy DMP 2023", main="Trend of Italy DMP")
 abline(0,1, col="red")
-ggsave(filename = "DMP_Italy_Trend.png" , plot = dmptrend)
 
 # Now let's do the same for the NDVI data
 # Let's start with NDVI for the year 2014:
@@ -136,7 +138,7 @@ italyndvi2023
 
 # Let's plot the graph of 2023 for Italy
 
-italyndvi2023_plot <- ggplot() + geom_raster(italyndvi2014, mapping=aes(x=x, y=y, fill= Normalized.Difference.Vegetation.Index.333m )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI 2023 Italy")
+italyndvi2023_plot <- ggplot() + geom_raster(italyndvi2023, mapping=aes(x=x, y=y, fill= Normalized.Difference.Vegetation.Index.333m )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI 2023 Italy")
 italyndvi2023_plot <- italyndvi2014_plot + labs(fill= "NDVI")
 italyndvi2023_plot
 
@@ -184,7 +186,85 @@ ggsave(filename = "NDVI_Italy_difference.png" , plot = italyndvidifference_plot)
 
 ndvitrend <- plot(italyndvi2014, italyndvi2023, xlab="Italy NDVI 2014", ylab="Italy NDVI 2023", main="Trend of Italy NDVI")
 abline(0,1, col="red")
-ggsave(filename = "NDVI_Italy_Trend.png" , plot = ndvitrend)
+
+# Now let's do the same for the LAI data
+# Let's start with LAI for the year 2014:
+# Let's take a look at our data
+
+lai_2014
+
+# Now we only look at Italy:
+Italy <- c(6, 21, 36, 48) 
+
+italylai2014 <- crop(lai_2014, Italy)
+italylai2014
+
+# Let's plot the graph of 2014 for Italy
+
+italylai2014_plot <- ggplot() + geom_raster(italylai2014, mapping=aes(x=x, y=y, fill= Leaf.Area.Index.333m )) + scale_fill_viridis(option="rocket") + ggtitle("LAI 2014 Italy")
+italylai2014_plot <- italylai2014_plot + labs(fill= "LAI")
+italylai2014_plot
+
+# Now we save the new plot
+ggsave(filename = "global_LAI_2014_Italy.png" , plot = italylai2014_plot)
+
+# Let's repeat everything for the NDVI for the year 2023:
+
+lai_2023
+
+italylai2023 <- crop(lai_2023, Italy)
+italylai2023
+
+# Let's plot the graph of 2023 for Italy
+
+italylai2023_plot <- ggplot() + geom_raster(italylai2023, mapping=aes(x=x, y=y, fill= Leaf.Area.Index.333m )) + scale_fill_viridis(option="rocket") + ggtitle("LAI 2023 Italy")
+italylai2023_plot <- italylai2014_plot + labs(fill= "LAI")
+italylai2023_plot
+
+# Now we save the new plot
+ggsave(filename = "global_LAI_2023_Italy.png" , plot = italylai2023_plot) 
+
+
+# Now let's look at the NDVI plots from 2014 and 2023 together to compare them:
+Italy_LAI_comparison <- italylai2014_plot + italylai2023_plot
+Italy_LAI_comparison
+
+ggsave(filename = "Italy_LAI_comparison.png" , plot = Italy_LAI_comparison)
+
+# Now let's look at the difference between the year 2014 and 2022:
+
+rlist <- list.files(pattern= "lai")
+rlist 
+
+import <- lapply(rlist, raster)
+import
+
+# Let's stack the data:
+
+laistacked <- stack(import)
+laistacked
+
+# For Italy:
+italylaistacked <- crop(laistacked, Italy)
+italylaistacked
+
+plot(italylaistacked)
+
+# Now let's look at the difference between LAI in 2014 and in 2023
+
+
+Italy_LAI_difference <- italylaistacked[[2]]-italylaistacked[[1]]
+Italy_LAI_difference
+
+italylaidifference_plot <- ggplot() + geom_raster(Italy_LAI_difference, mapping=aes(x=x, y=y, fill=layer )) + scale_fill_viridis(option="rocket") + ggtitle("LAI Italy difference")
+italylaidifference_plot
+
+ggsave(filename = "LAI_Italy_difference.png" , plot = italylaidifference_plot)
+
+# Let's look at the trend of LAI during the years:
+
+laitrend <- plot(italylai2014, italylai2023, xlab="Italy LAI 2014", ylab="Italy LAI 2023", main="Trend of Italy LAI")
+abline(0,1, col="red")
 
 # Now we can look at the correlation trand between DNVI and DMP
 # For 2014
