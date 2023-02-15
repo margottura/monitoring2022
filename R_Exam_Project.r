@@ -124,7 +124,7 @@ plot(Australia_ndvistacked)
 ndvi_difference <- Australia_ndvistacked[[2]]-Australia_ndvistacked[[1]]
 ndvi_difference
 
-ndvidifference_plot <- ggplot() + geom_raster(ndvi_difference, mapping=aes(x=x, y=y, fill= )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI difference")
+ndvidifference_plot <- ggplot() + geom_raster(ndvi_difference, mapping=aes(x=x, y=y, fill= Fraction.of.green.Vegetation.Cover.333m )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI difference")
 ndvidifference_plot
 
 ggsave(filename = "NDVI_difference.png" , plot = ndvidifference_plot)
