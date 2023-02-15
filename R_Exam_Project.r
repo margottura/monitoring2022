@@ -204,7 +204,7 @@ fcoverstacked
 Australia_fcoverstacked <- crop(fcoverstacked, Australia)
 Australia_fcoverstacked
 
-plot(Australia_ndvistacked)
+plot(Australia_fcoverstacked)
 
 # Now let's look at the difference between the NDVI in 2019 and in 2020
 
