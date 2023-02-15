@@ -139,7 +139,7 @@ italyndvi2023
 # Let's plot the graph of 2023 for Italy
 
 italyndvi2023_plot <- ggplot() + geom_raster(italyndvi2023, mapping=aes(x=x, y=y, fill= Normalized.Difference.Vegetation.Index.333m )) + scale_fill_viridis(option="rocket") + ggtitle("NDVI 2023 Italy")
-italyndvi2023_plot <- italyndvi2014_plot + labs(fill= "NDVI")
+italyndvi2023_plot <- italyndvi2023_plot + labs(fill= "NDVI")
 italyndvi2023_plot
 
 # Now we save the new plot
@@ -266,15 +266,33 @@ ggsave(filename = "LAI_Italy_difference.png" , plot = italylaidifference_plot)
 laitrend <- plot(italylai2014, italylai2023, xlab="Italy LAI 2014", ylab="Italy LAI 2023", main="Trend of Italy LAI")
 abline(0,1, col="red")
 
-# Now we can look at the correlation trand between DNVI and DMP
+# Now we can look at the correlation trand between DMP and NDVI:
 # For 2014
 
 DNVI_DMP_trend_first <- plot(italyndvi2014, italydmp2014, xlab="Italy NDVI 2014", ylab="Italy DMP 2014", main="Trend of NDVI and DMP 2014")
 abline(0,1, col="red")
 
+# For 2023
+DNVI_DMP_trend_second <- plot(italyndvi2023, italydmp2023, xlab="Italy NDVI 2023", ylab="Italy DMP 2023", main="Trend of NDVI and DMP 2023")
+abline(0,1, col="red")
+
+# Let's also look at the correlation between DMP and LAI:
+# For 2014
+
+LAI_DMP_trend_first <- plot(italylai2014, italydmp2014, xlab="Italy LAI 2014", ylab="Italy DMP 2014", main="Trend of LAI and DMP 2014")
+abline(0,1, col="red")
 
 # For 2023
+LAI_DMP_trend_second <- plot(italylai2023, italydmp2023, xlab="Italy LAI 2023", ylab="Italy DMP 2023", main="Trend of LAI and DMP 2023")
+abline(0,1, col="red")
 
-DNVI_DMP_trend_second <- plot(italyndvi2023, italydmp2023, xlab="Italy NDVI 2023", ylab="Italy DMP 2023", main="Trend of NDVI and DMP 2023")
+# Finally, let's also look at the correlation between LAI and NDVI:
+# For 2014
+
+LAI_NDVI_trend_first <- plot(italyndvi2014, italylai2014, xlab="Italy NDVI 2014", ylab="Italy LAI 2014", main="Trend of LAI and NDVI 2014")
+abline(0,1, col="red")
+
+# For 2023
+LAI_NDVI_trend_second <- plot(italyndvi2023, italylai2023, xlab="Italy NDVI 2023", ylab="Italy LAI 2023", main="Trend of LAI and NDVI 2023")
 abline(0,1, col="red")
 
