@@ -14,7 +14,6 @@ library(ggplot2)
 library(RStoolbox) 
 library(viridis) 
 library(patchwork) 
-library(rgdal)
 
 # Now we set our working directory:
 
