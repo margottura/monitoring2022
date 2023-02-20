@@ -8,13 +8,13 @@
 # and from December 2020, at the end of the year
 # First of all, we open the packages from our library:
 
-library(ncdf4) # reading .nc files
-library(raster) # usual package
-library(ggplot2) # beautiful plots
-library(RStoolbox) # RS functions
-library(viridis) # legends - color gamut
-library(patchwork) # multiframe for ggplot
-library(rgdal) # spatial software - sp package
+library(ncdf4) 
+library(raster) 
+library(ggplot2) 
+library(RStoolbox) 
+library(viridis) 
+library(patchwork) 
+library(rgdal)
 
 # Now we set our working directory:
 
