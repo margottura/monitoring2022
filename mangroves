@@ -1,0 +1,21 @@
+#let's set our working directory
+setwd("C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+
+#let's download/open all the packages we need
+library(raster)
+library(sp)
+library(readr)
+library(terra)
+library(rgdal)
+library(sf)
+
+#let's load the csv file with the mangroves data
+mangrovesdata <- read.csv("mangrovesdata.csv", sep = "\t")
+mangrovesdata
+
+#now let's import the shapefile from qgis using the terra package
+mangroves_shapefile <- vect("C:/Documenti/Laurea magistrale/Tirocinio Duccio/mangroves_shapefile.shp")
+mangroves_shapefile
+
+#let's take a look
+plot(mangroves_shapefile)
