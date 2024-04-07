@@ -19,3 +19,22 @@ mangroves_shapefile
 
 #let's take a look
 plot(mangroves_shapefile)
+
+#Now let's download the data from WorldClim
+
+data_australia <- worldclim_country("AUS", var="bio", res=10, versione="2.1", path="C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+names(data_australia) <- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
+data_australia
+plot(data_australia)
+
+#now let's crop our data to only have the Brisbane areas (lat min 153, lat max 153.5, lon min -27.5, lon max -27.1)
+
+brisbane_ext <- c(153, 153.5, -27.5, -27.1)
+ext <- extent(brisbane_ext[1], brisbane_ext[2], brisbane_ext[3], brisbane_ext[4])
+
+data_brisbane <- crop(data_australia, ext)
+names(data_brisbane) <- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
+data_brisbane
+
+plot(data_brisbane)
+
