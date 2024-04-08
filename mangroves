@@ -8,6 +8,17 @@ library(readr)
 library(terra)
 library(rgdal)
 library(sf)
+library(ecospat)
+library(rgbif)
+library(maptools)
+library(devtools)
+library(ade4)
+library(ape)
+library(biomod2)
+library(virtualspecies)
+library(viridis)
+library(geodata)
+library(corrplot)
 
 #let's load the csv file with the mangroves data
 mangrovesdata <- read.csv("mangrovesdata.csv", sep = "\t")
@@ -33,6 +44,30 @@ brisbane_ext <- c(153, 153.5, -27.5, -27.1)
 ext <- extent(brisbane_ext[1], brisbane_ext[2], brisbane_ext[3], brisbane_ext[4])
 
 data_brisbane <- crop(data_australia, ext)
+
+#let's select only the variables we need 
+new_data_brisbane <- data_brisbane[[c(1, 5, 12, 15, 17, 18)]]
+names(new_data_brisbane) <- c("Annual Mean Temperature", "Max Temperature of Warmest Month", "Annual Precipitation", "Precipitation Seasonality", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter")
+new_data_brisbane
+plot(new_data_brisbane)
+
+#let's create a stack of raster with the brisbane worldclim data
+mydata <- stack(new_data_brisbane)
+mydata
+
+#let's try for bio1 and bio2
+plot(mydata[[1]], col=magma(500, alpha =1, begin=0, end=1, direction=1))
+plot(mydata[[2]], col=magma(500, alpha =1, begin=0, end=1, direction=1))
+plot(mydata, col=magma(500, alpha =1, begin=0, end=1, direction=1))
+
+#now let's create a correlation matrix to see which variables are strongly associated with each other
+# Subsample 10% of pixels and calculate pairwise correlations
+r1 <-mydata$Annual.Mean.Temperature
+cor <- cor(sampleRandom(mydata, size=ncell(r1)*0.30), method="pearson")
+
+#now let's plot the correlation matrix
+df <- corrplot(cor, method="number", col=magma(30, alpha=1, begin=0, end=1, direction=1), type="lower", tl.pos='ld')
+
 names(data_brisbane) <- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
 data_brisbane
 
