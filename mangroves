@@ -110,6 +110,36 @@ bne_wclim_stats <- apply(bne_wclim_dataframe, 2, function(x) c(min=min(x), media
 bne_wclim_stats
 
 #calculate spatial autocorrelation
+ecospat.mantel.correlogram(dfvar = mangrovesdata, colxy = 1:6, n = 100, colvar = 1:6, max = 10, nclass = 10, nperm = 100)
+
+
+##############################
+#PCA
+#let's make a PCA of the environmental data
+#let's normalize the data
+bne_wclim_dataframe
+numerical_data <- bne_wclim_dataframe[,]
+head(numerical_data)
+
+data_normalized <- scale(numerical_data)
+head(data_normalized)
+
+#let's compute the correlation matrix
+corr_matrix <- cor(data_normalized)
+ggcorrplot(corr_matrix)
+
+#let's apply PCA
+data.pca <- princomp(corr_matrix)
+summary(data.pca)
+data.pca$loadings[, 1:2]
+
+#let's visualize the data
+#Scree plot
+fviz_e
+#let's calculate the occurrence density grid
+
+
+#calculate spatial autocorrelation
 ecospat.mantel.correlogram(dfvar = bne_wclim_dataframe, colxy = 1:6, n = 100, colvar = 1:6, max = 10, nclass = 10, nperm = 100)
 
 #core-modelling, niche qualification
