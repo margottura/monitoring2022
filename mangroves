@@ -24,11 +24,13 @@ library(FactoMineR)
 #let's load the csv file with the mangroves data
 mangrovesdata <- read.csv("mangrovesdata.csv", sep = "\t")
 mangrovesdata
+#let's only keep the data for lat, long and year of observation
+mangroves_subset <- mangrovesdata[, c("decimalLatitude", "decimalLongitude", "year")]
+mangroves_subset
 
 #now let's import the shapefile from qgis using the terra package
 
 mangroves_shapefile <- vect("C:/Documenti/Laurea magistrale/Tirocinio Duccio/mangroves_shapefile.shp")
-mangroves_shapefile
 
 plot(mangroves_shapefile)
 
@@ -93,14 +95,6 @@ cor <- cor(sampleRandom(mydata, size=ncell(r1)*0.30), method="pearson")
 #now let's plot the correlation matrix
 df <- corrplot(cor, method="number", col=magma(30, alpha=1, begin=0, end=1, direction=1), type="lower", tl.pos='ld')
 
-#let's save our brisbane worldclim data as a dataframe
-bne_wclim_dataframe <- getValues(mydata)
-
-#let's remove missing values
-bne_wclim_dataframe <- bne_wclim_dataframe[complete.cases(bne_wclim_dataframe), ]
-#let's recalculate the temperature valus in °C*10
-for(col in 1:ncol(bne_wclim_dataframe)){if(grepl("temp", colnames(bne_wclim_dataframe)[col])){bne_wclim_dataframe[, col] <- bne_wclim_dataframe[, col]/10}}
-
 
 ##############################
 #PCA
@@ -133,3 +127,68 @@ fviz_cos2(data.pca, choice = "var", axes = 1:2)
 fviz_pca_var(data.pca, col.var = "cos2",
              gradient.cols = c("black", "blue", "red"),
              repel = TRUE)
+
+
+############
+#ecospat tutorial
+library(ecospat)
+library(raster)
+library(rgbif)
+library(maptools)
+library(devtools)
+library(terra)
+library(ade4)
+library(ape)
+library(biomod2)
+
+#let's try to extract the wordclim wariables for the occurrences points
+coordinates(mangroves_subset) <- c("decimalLongitude", "decimalLatitude")
+proj4string(mangroves_subset) <- CRS("+proj=longlat +datum=WGS84")
+occ_bioclim <- extract(mydata, mangroves_subset)
+#now let's add them into one dataset
+merged_data <- cbind(mangroves_subset, occ_bioclim)
+merged_data
+
+#let's see if it worked
+data(wrld_simpl)
+par(mar = c(1, 0, 0, 0))
+plot(wrld_simpl, border = "gray80")
+points(merged_data, pch=16, col=2, cex=0.3)
+
+#let's turn it into a dataframe
+merged_data.df <- as.data.frame(merged_data)
+for (col in 1:ncol(merged_data.df)) {
+  # Check if column name contains "temp"
+  if (grepl("temp", colnames(merged_data.df)[col])) {
+    # Divide column values by 10
+    merged_data.df[, col] <- merged_data.df[, col] / 10
+  }
+}
+merged_data.df <- na.omit(merged_data.df)
+merged_data.df
+names(merged_data.df)
+
+#now let's calculate basic statistics
+occBNE_stats <- apply(merged_data.df, 2, function(x) c(min=min(x), median(x), mean=mean(x), max=max(x), sd=sd(x)))
+occBNE_stats
+
+#now let's calculate the spatial autocorrelation
+ecospat.mantel.correlogram(dfvar=merged_data.df[c(1:9)],colxy=8:9, n=100, colvar=1:7, 
+                           max=10, nclass=10, nperm=100)
+
+#core-modelling
+#niche quantification
+new_data_brisbane <- na.omit(new_data_brisbane)
+pca.clim <- dudi.pca(new_data_brisbane, center=TRUE, scale=TRUE, scannf=FALSE, nf=2)
+bne_scores <- pca.clim$li
+
+bne_scores_LS <- suprow(pca.clim, merged_data.df[, 2:7])$li
+bne_scores_Env <- suprow(pca.clim, new_data_brisbane)$li
+
+
+#let's plot the niche
+bne_grid <- ecospat.grid.clim.dyn(bne_scores, bne_scores_Env, bne_scores_LS)
+ecospat.plot.niche.dyn(bne_grid, bne_grid, quant = 0.1, interest = 2, title = "Niche", name.axis1 = "PC1", name.axis2 = "PC2")
+
+#let's plot the variable contributions
+ecospat.plot.contrib(contrib=pca.clim$co, eigen=pca.clim$eig)
