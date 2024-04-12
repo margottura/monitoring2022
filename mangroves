@@ -17,6 +17,9 @@ library(virtualspecies)
 library(viridis)
 library(geodata)
 library(corrplot)
+library(ggcorrplot)
+library(factoextra)
+library(FactoMineR)
 
 #let's load the csv file with the mangroves data
 mangrovesdata <- read.csv("mangrovesdata.csv", sep = "\t")
@@ -47,8 +50,6 @@ worldclim_data$`Annual Mean Temperature`
 data_australia <- worldclim_country("AUS", var="bio", res=10, versione="2.1", path="C:/Documenti/Laurea magistrale/Tirocinio Duccio")
 data_australia
 names(data_australia) <- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
-
-
 
 #now let's crop our data to only have the Brisbane areas (lat min 153, lat max 153.5, lon min -27.5, lon max -27.1)
 lat_min <- 153
@@ -92,9 +93,6 @@ cor <- cor(sampleRandom(mydata, size=ncell(r1)*0.30), method="pearson")
 #now let's plot the correlation matrix
 df <- corrplot(cor, method="number", col=magma(30, alpha=1, begin=0, end=1, direction=1), type="lower", tl.pos='ld')
 
-############
-#ecospat tutorial
-
 #let's save our brisbane worldclim data as a dataframe
 bne_wclim_dataframe <- getValues(mydata)
 
@@ -102,15 +100,6 @@ bne_wclim_dataframe <- getValues(mydata)
 bne_wclim_dataframe <- bne_wclim_dataframe[complete.cases(bne_wclim_dataframe), ]
 #let's recalculate the temperature valus in °C*10
 for(col in 1:ncol(bne_wclim_dataframe)){if(grepl("temp", colnames(bne_wclim_dataframe)[col])){bne_wclim_dataframe[, col] <- bne_wclim_dataframe[, col]/10}}
-
-
-#let's calculate basic statistics for each climatic variable
-
-bne_wclim_stats <- apply(bne_wclim_dataframe, 2, function(x) c(min=min(x), median=median(x), mean=mean(x), max=max(x), sd=sd(x)))
-bne_wclim_stats
-
-#calculate spatial autocorrelation
-ecospat.mantel.correlogram(dfvar = mangrovesdata, colxy = 1:6, n = 100, colvar = 1:6, max = 10, nclass = 10, nperm = 100)
 
 
 ##############################
@@ -135,12 +124,12 @@ data.pca$loadings[, 1:2]
 
 #let's visualize the data
 #Scree plot
-fviz_e
-#let's calculate the occurrence density grid
-
-
-#calculate spatial autocorrelation
-ecospat.mantel.correlogram(dfvar = bne_wclim_dataframe, colxy = 1:6, n = 100, colvar = 1:6, max = 10, nclass = 10, nperm = 100)
-
-#core-modelling, niche qualification
-#let's make a PCA of the environmental data
+fviz_eig(data.pca, addlabels=TRUE)
+#biplot of the attributes
+fviz_pca_var(data.pca, col.var = "black")
+#contribution of each variable
+fviz_cos2(data.pca, choice = "var", axes = 1:2)
+#biplot combined with cos2
+fviz_pca_var(data.pca, col.var = "cos2",
+             gradient.cols = c("black", "blue", "red"),
+             repel = TRUE)
