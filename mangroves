@@ -138,53 +138,91 @@ pres_points <- sampleOccurrences(bne_pres, n=100, type= "presence only", sample.
 plot(bne_stack[[1]], col=viridis(500, alpha=1, begin=0, end=1, direction=1))
 points(pres_points$sample.points, col="black", pch=19)
 
-##################
-#niche modelling (ecospat tutorial)
-#extract wclim variables for occurrences points
-coordinates(m_subset) <- c("decimalLongitude", "decimalLatitude")
-proj4string(m_subset) <- CRS("+proj=longlat +datum=WGS84")
-occ_wclim <- extract(bne_stack, m_subset)
 
-#add them into one dataset
-merged_data <- cbind(m_subset, occ_wclim)
-merged_data
+######niche analysis
+#preliminary steps for niche analysis
+#raster layer to create the realized niche
+bne_raster <- bne_pres$pa.raster %>% raster()
 
-#plot the data
-data(wrld_simpl)
-par(mar = c(1, 0, 0, 0))
-plot(wrld_simpl, border = "gray80")
-points(merged_data, pch=16, col=2, cex=0.3)
+#extract bioclim layers one by one from the stack
+r1 <- bne_stack$Annual.Mean.Temperature
+r2 <- bne_stack$Max.Temperature.of.Warmest.Month
+r3 <- bne_stack$Annual.Precipitation
+r4 <- bne_stack$Precipitation.Seasonality
+r5 <- bne_stack$Precipitation.of.Driest.Quarter
+r6 <- bne_stack$Precipitation.of.Warmest.Quarter
 
-#make a dataframe
-merged_df <- as.data.frame(merged_data)
+#create a stack with the bioclimatic variable and the raster of the realized niche
+stack_pa <- brick(r1,r2,r3,r4,r5,r6,bne_raster)
 
-for (col in 1:ncol(merged_df)) {if (grepl("temp", colnames(merged_df)[col])) {
-  merged_df[, col] <- merged_df[, col] / 10}}
+#extract values from the stack, convert into dataframe, retain only presence pixels (1)
+values <- stack_pa%>% rasterToPoints()%>% as.data.frame()
+filtered_pa <- values%>% filter(., lyr.1==1)%>% as.data.frame()
 
-merged_df <- na.omit(merged_df)    
-merged_df
-names(merged_df)
+#convert to a raster 
+raster_pa <- filtered_pa%>% .[, -9]%>% rasterFromXYZ()
+raster_pa
+plot(raster_pa)
+
+#repeat for occurrence points
+#create a dataset, only keep rows satisfying Real =1 and Observed =1
+dataset_occ <- pres_points$sample.points%>%as.data.frame()%>%.[.$Real == 1 & .$Observed == 1, ]
+
+#environmental viarables associated with occurrences using coordinates
+stack_occ <- brick(r1,r2,r3,r4,r5,r6)
+values_occ <- stack_occ%>%rasterToPoints()%>%as.data.frame()
+filtered_occ <- merge(values_occ, raster_occ, by=c("x", "y"))
+raster_occ <- filtered_occ %>% .[,-(9:10)]%>%rasterFromXYZ()
 
 #calculate basic statistics
-bne_stats <- apply(merged_df, 2, function(x) c(min=min(x), median(x), mean=mean(x), max=max(x), sd=sd(x)))
+bne_stats <- apply(filtered_occ, 2, function(x) c(min=min(x), median(x), mean=mean(x), max=max(x), sd=sd(x)))
 bne_stats
 
 #calculate spatial autocorrelation 
-ecospat.mantel.correlogram(dfvar=merged_df[c(1:9)], colxy=8:9, n=100, colvar=1:7, max=10, nclass=10, nperm=100)
+ecospat.mantel.correlogram(dfvar=filtered_occ[c(1:9)], colxy=8:9, n=100, colvar=1:7, max=10, nclass=10, nperm=100)
 
-#niche quantification
-subset_wclim_bne <- na.omit(subset_wclim_bne)
-pca.wclim <- dudi.pca(subset_wclim_bne, center=TRUE, scale=TRUE, scannf=FALSE, nf=2)
-bne_scores <- pca.wclim$li
+#niche overlapping
+#create dataframe
+env_pa <- getValues(raster_pa)
+env_occ <- getValues(raster_occ)
 
-bne_scores_LS <- suprow(pca.wclim, merged_df[, 2:7])$li
-bne_scores_Env <- suprow(pca.wclim, subset_wclim_bne)$li
+#remove missing values
+env_pa <- env_pa[complete.cases(env_pa),]
+env_occ <- env_occ[complete.cases(env_occ),]
 
-#plot the niche
-bne_grid <- ecospat.grid.clim.dyn(bne_scores, bne_scores_Env, bne_scores_LS)
-ecospat.plot.niche.dyn(bne_grid, bne_grid, quant = 0.1, interest = 2, title = "Niche", name.axis1 = "PC1", name.axis2 = "PC2")
+#produce global environment background data
+globalEnvM <- rbind(env_pa, env_occ)
 
-#plot the variable contributions
+#apply PCA on the global data
+pca.clim <- dudi.pca(globalEnvM, center=TRUE, scale=TRUE, scannf=FALSE, nf=2)
+
+#two-dimensional summary of env variability
+global.scores <- pca.clim$li
+
+#map the obs data into a two-dimensional space
+pa.scores <- suprow(pca.clim, data.frame(filtered_pa)[,colnames(globalEnvM)])$li
+occ.scores <- suprow(pca.clim, data.frame(filtered_occ)[, colnames(globalEnvM)])$li
+
+pa.scores1 <- suprow(pca.clim, env_pa)$li
+occ.scores1 <- suprow(pca.clim, env_occ)$li
+
+#calculate occurrence density grid
+pagrid <- ecospat.grid.clim.dyn(global.scores, pa.scores, pa.scores1)
+occgrid <- ecospat.grid.clim.dyn(global.scores, occ.scores, occ.scores1)
+
+#plot the niche category
+ecospat.plot.niche.dyn(pagrid, occgrid, quant=0.1, interest=2, name.axis1="PC1", name.axis2="PC2")
+
+#calculate niche overlap
+ecospat.niche.overlap(pagrid, occgrid, cor=T)
+
+#$D
+#[1] 1
+
+#$I
+#[1] 1
+
+
+#plot the variable contribution
 ecospat.plot.contrib(contrib=pca.wclim$co, eigen=pca.wclim$eig)
-
 
