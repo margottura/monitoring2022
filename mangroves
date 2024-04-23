@@ -54,20 +54,17 @@ wclim_bne <- crop(wclim_aus, ext)
 wclim_bne
 plot(wclim_bne)
 
-#select only some variables (which ones?)
-subset_wclim_bne <- wclim_bne[[c(1,5,12,15,17,18)]]
-subset_wclim_bne
-plot(subset_wclim_bne)
 
 #create a stack of raster with bne wclim data
-bne_stack <- stack(subset_wclim_bne)
+bne_stack <- stack(wclim_bne)
 bne_stack
 
 #plot the data using viridis
-plot(bne_stack[[1]], col=viridis(500, alpha =1, begin=0, end=1, direction=1))
-points(m_shp, pch=16, col= 0, cex=1)
+plot(bne_stack[[2]], col=viridis(500, alpha =1, begin=0, end=1, direction=1))
+title("Mean Diurnal Range")
+points(m_shp, pch=16, col= 9, cex=1)
 
- plot(bne_stack, col=viridis(500, alpha =1, begin=0, end=1, direction=1))
+plot(bne_stack, col=viridis(500, alpha =1, begin=0, end=1, direction=1))
 
 #######################################
 #statistical analysis
@@ -76,17 +73,41 @@ points(m_shp, pch=16, col= 0, cex=1)
 
 r1 <- bne_stack$Annual.Mean.Temperature
 cor <- cor(sampleRandom(bne_stack, size=ncell(r1)*0.30), method="pearson")
+cor
 
 #plot the correlation matrix
 df <- corrplot(cor, method="number", col=viridis(30, alpha=1, begin=0, end=1, direction=1), type="lower", tl.pos='ld')
 )
 
+bne_stack_subset <- bne_stack[[c(1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 17, 19)]]
+r1.1 <- bne_stack_subset$Annual.Mean.Temperature
+cor1 <- cor(sampleRandom(bne_stack_subset, size=ncell(r1)*0.30), method="pearson")
+cor1
+df1 <- corrplot(cor1, method="number", col=viridis(30, alpha=1, begin=0, end=1, direction=1), type="lower", tl.pos='ld')
+)
+
+#the least correlated are: Precipitation.of.Coldest.Quarter(bio19), Max.Temperature.of.Warmest.Month (bio5), Precipitation.of.Driest.Quarter (bio17)
+#Mean.Temperature.of.Wettest.Quarter (bio10), Min.Temperature.of.Coldest.Month (bio6), Mean.Diurnal.Range (bio2), Isothermality (bio3)
+
+#select only some variables
+
+bne_stack <- bne_stack[[c(2,3,5,6,10,17,19)]]
+bne_stack
+
+plot(bne_stack, col=viridis(500, alpha =1, begin=0, end=1, direction=1))
+
+
+
 #2. PCA (principal component analysis) (seguito dal tutorial sulla PCA)
 #normalize the data
 #make a dataframe of bne wclim data
-bne_df <- as.data.frame(subset_wclim_bne)
+bne_subset <- wclim_bne[[c("Precipitation of Coldest Quarter", "Max Temperature of Warmest Month", "Precipitation of Driest Quarter",
+                          "Mean Temperature of Wettest Quarter","Min Temperature of Coldest Month", "Mean Diurnal Range", "Isothermality")]]
+bne_subset
+
+bne_df <- as.data.frame(bne_subset)
 bne_num <- bne_df[,]
-head(bne_norm)
+head(bne_num)
 bne_norm <- scale(bne_num)
 head(bne_norm)
 
@@ -120,6 +141,7 @@ fviz_pca_var(bne_pca, col.var = "cos2",
 random.sp <- generateRandomSp(raster.stack=bne_stack, convert.to.PA=FALSE, species.type="multiplicative",
                               approach="random", relations="gaussian", realistic.sp=TRUE, plot=FALSE)
 
+
 plot(random.sp$suitab.raster, col = viridis(500, alpha=1, begin=0, end=1, direction=1))
 
 #let's visualize the variables contribution
@@ -145,22 +167,23 @@ points(pres_points$sample.points, col="black", pch=19)
 bne_raster <- bne_pres$pa.raster %>% raster()
 
 #extract bioclim layers one by one from the stack
-r1 <- bne_stack$Annual.Mean.Temperature
-r2 <- bne_stack$Max.Temperature.of.Warmest.Month
-r3 <- bne_stack$Annual.Precipitation
-r4 <- bne_stack$Precipitation.Seasonality
-r5 <- bne_stack$Precipitation.of.Driest.Quarter
-r6 <- bne_stack$Precipitation.of.Warmest.Quarter
+r1 <- bne_stack$Mean.Diurnal.Range
+r2 <- bne_stack$Isothermality
+r3 <- bne_stack$Max.Temperature.of.Warmest.Month
+r4 <- bne_stack$Min.Temperature.of.Coldest.Month
+r5 <- bne_stack$Mean.Temperature.of.Warmest.Quarter
+r6 <- bne_stack$Precipitation.of.Driest.Quarter
+r7 <- bne_stack$Precipitation.of.Coldest.Quarter
 
 #create a stack with the bioclimatic variable and the raster of the realized niche
-stack_pa <- brick(r1,r2,r3,r4,r5,r6,bne_raster)
+stack_pa <- brick(r1,r2,r3,r4,r5,r6,r7,bne_raster)
 
 #extract values from the stack, convert into dataframe, retain only presence pixels (1)
 values <- stack_pa%>% rasterToPoints()%>% as.data.frame()
 filtered_pa <- values%>% filter(., lyr.1==1)%>% as.data.frame()
 
 #convert to a raster 
-raster_pa <- filtered_pa%>% .[, -9]%>% rasterFromXYZ()
+raster_pa <- filtered_pa%>% .[, -10]%>% rasterFromXYZ()
 raster_pa
 plot(raster_pa)
 
@@ -169,10 +192,11 @@ plot(raster_pa)
 dataset_occ <- pres_points$sample.points%>%as.data.frame()%>%.[.$Real == 1 & .$Observed == 1, ]
 
 #environmental viarables associated with occurrences using coordinates
-stack_occ <- brick(r1,r2,r3,r4,r5,r6)
+stack_occ <- brick(r1,r2,r3,r4,r5,r6,r7)
+stack_occ
 values_occ <- stack_occ%>%rasterToPoints()%>%as.data.frame()
-filtered_occ <- merge(values_occ, raster_occ, by=c("x", "y"))
-raster_occ <- filtered_occ %>% .[,-(9:10)]%>%rasterFromXYZ()
+filtered_occ <- merge(values_occ, dataset_occ, by=c("x", "y"))
+raster_occ <- filtered_occ %>% .[,-(10:11)]%>%rasterFromXYZ()
 
 #calculate basic statistics
 bne_stats <- apply(filtered_occ, 2, function(x) c(min=min(x), median(x), mean=mean(x), max=max(x), sd=sd(x)))
@@ -222,7 +246,5 @@ ecospat.niche.overlap(pagrid, occgrid, cor=T)
 #$I
 #[1] 1
 
-
 #plot the variable contribution
-ecospat.plot.contrib(contrib=pca.wclim$co, eigen=pca.wclim$eig)
-
+ecospat.plot.contrib(contrib=pca.clim$co, eigen=pca.clim$eig)
