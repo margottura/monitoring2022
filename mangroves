@@ -243,6 +243,51 @@ ecospat.niche.overlap(pagrid, occgrid, cor=T)
 #$D
 #[1] 1
 
+#download future wclim data from CMIP6
+wclim_future <- geodata::cmip6_world("ACCESS-CM2", "370", "2021-2040", var="bioc", res=10, path="C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+names(wclim_future)<- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
+
+wclim_future <- wclim_future[[c(2,3,5,6,10,17,19)]]
+plot(wclim_future)
+summary(wclim_future)
+
+wclim_future_bne <- crop(wclim_future, ext)
+summary(wclim_future_bne)
+plot(wclim_future_bne)
+bne_stack_future <- stack(wclim_future_bne)
+  
+#we only keep the variables we need
+bne_stack_future <- bne_stack_future[[c(2,3,5,6,10,17,19)]]
+bne_stack_future
+summary(bne_stack_future)
+
+#GLM
+
+#bne_stack is the bioclim stack
+#let's extract the raster values for the positions of occurrences
+presence_data_extracted <- raster::extract(bne_stack, m_subset[, c("decimalLongitude", "decimalLatitude")])
+
+presence_data <- data.frame(m_subset[, c("decimalLongitude", "decimalLatitude")], presence_data_extracted)
+presence_data
+presence_data <- na.omit(presence_data)
+
+
+#let's add the presence column
+presence_data$species_presence <- 1
+
+#let's create a logistic regression model
+logistic_regr_model <- glm(species_presence~ ., family=binomial(link="logit"), data=presence_data)
+summary(logistic_regr_model)
+
+#let's make predictions
+predictions <- predict(logistic_regr_model, presence_data, type= "response")
+print(predictions)
+
+present_loc <- presence_data[presence_data$species_presence == 1, c("decimalLongitude", "decimalLatitude")]
+plot(predictions, ext = ext)
+points(present_loc$decimalLongitude, present_loc$decimalLatitude, pch = '+', col = 'red', cex = 0.5)
+
+
 #$I
 #[1] 1
 
