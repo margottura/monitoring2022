@@ -1,0 +1,242 @@
+#MaxEnt
+#let's load all the packages
+packages_needed <- c("raster", # for raster analysis
+                     "dismo", # a collection of ENM/SDM tools
+                     "rgeos","rgdal","sp", # spatial data analysis
+                     "ENMeval", # a few new tools in ENM/SDM
+                     "wallace",   # interface for Maxent and ENMeval
+                     "utils", # for zip & unzip files
+                     "jsonlite" # necessary for download data from GBIF
+)
+
+pk_to_install <- packages_needed [!( packages_needed %in% rownames(installed.packages())  )]
+if(length(pk_to_install)>0 ){
+  install.packages(pk_to_install,repos="http://cran.r-project.org")
+}
+
+library(raster)
+library(dismo)
+library(rgeos)
+library(sp)
+library(rgdal)
+library(ENMeval)
+
+if( !("rJava" %in% rownames(installed.packages()))  ){
+  install.packages("rJava",repos="http://cran.r-project.org")
+}
+install.packages("rJava")
+library("rJava")
+
+if(!require(devtools)){
+  install.packages("devtools")
+}
+
+if(!require(kuenm)){
+  devtools::install_github("marlonecobos/kuenm")
+}
+install.packages("kuenm")
+library("kuenm")
+
+#lnow let's set up the Maxent path
+# download maxent.jar 3.3.3k, and place the file in the desired folder; note that, there may be a newer version of Maxent
+if( !file.exists(paste0(system.file("java", package="dismo"),"/maxent.jar"))  )   {
+  utils::download.file(url="https://raw.githubusercontent.com/mrmaxent/Maxent/master/ArchivedReleases/3.3.3k/maxent.jar",
+                       destfile=paste0(system.file("java", package="dismo"),"/maxent.jar"),
+                       mode="wb") ## wb for binary file, otherwise maxent.jar can not execute
+}
+# also note that both R and Java need to be the same bit (either 32 or 64) to be compatible to run
+
+# to increase memory size of the JVM and prevent memory issues with Maxent.jar
+# options( java.parameters = c("-Xss2560k", "-Xmx2g") ) 
+
+#set up the working directory of R
+setwd("C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+
+if(!file.exists("code")) dir.create("code")
+if(!file.exists("data")) dir.create("data")
+if(!file.exists("data/bioclim")) dir.create("data/bioclim")
+if(!file.exists("data/studyarea")) dir.create("data/studyarea")
+if(!file.exists("output")) dir.create("output")
+
+#upload occurrence data from gbif
+m_occ <- read.csv("m_occ.csv", sep="\t")
+
+#make occurrence data spatial
+coordinates(m_occ) <- ~ decimalLongitude + decimalLatitude
+
+
+cat("the previous object is: ", class(m_occ),"\n") 
+head(m_occ@coords)
+crs(m_occ)
+# Define the coordinate system that will be used
+myCRS <- CRS("+init=epsg:4326") # WGS 84
+crs(m_occ) <- myCRS
+crs(m_occ)
+
+#crs projections
+m_occ_projected <- spTransform(m_occ, myCRS)
+plot(m_occ)
+plot(m_occ_projected)
+
+#read/write shapefile files
+dir.create("temp")
+shapefile(m_occ, "temp/m_occ.shp", overwrite=TRUE)
+loaded_shapefile <- shapefile("temp/m_occ.shp")
+
+#raster data
+library("raster")
+require(utils)
+if(!file.exists("data")) dir.create("data")
+if(!file.exists("data/bioclim")) dir.create("data/bioclim")
+if(!file.exists("data/studyarea")) dir.create("data/studyarea")
+if(!file.exists("output")) dir.create("output")
+
+#wordlclim data
+#Brisbane wordlclim data
+wclim_aus <- worldclim_country("AUS", var="bio", res=10, versione="2.1", path="C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+wclim_aus
+names(wclim_aus)<- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
+
+#crop for Brisbane area (lat min 153, lat max 153.5, lon min -27.5, lon max -27.1)
+bne_ext <- c(153, 153.5, -27.5, -27.1)
+ext <- extent(bne_ext[1], bne_ext[2], bne_ext[3], bne_ext[4])
+
+wclim_bne <- crop(wclim_aus, ext)
+wclim_bne
+plot(wclim_bne)
+
+#create a stack of raster with bne wclim data
+bne_stack <- stack(wclim_bne)
+bne_stack <- bne_stack[[c(2,3,5,6,10,17,19)]]
+
+raster::pairs(bne_stack,maxpixels=1000)
+
+
+#spatial analysis
+#prepare occ and raster
+plot(bne_stack$Mean.Diurnal.Range)
+plot(m_occ, add=T)
+
+#extract environmental conditions of occ raster layers
+conditions_occ <- extract(bne_stack, m_occ)
+head(conditions_occ)
+
+#remove NA
+bad_records <- is.na(conditions_occ[,1])
+table(bad_records)
+
+conditions_occ[bad_records,]
+m_occ <- m_occ[!bad_records,]
+
+#cut the raster layer with fine boundry
+occ_buffer <- buffer(m_occ, width=5*10^5)
+clim_mask <- mask(bne_stack, occ_buffer)
+
+#draw background samples
+set.seed(1)
+bg <- sampleRandom(x=clim_mask, size=1000, na.rm=T, sp=T)
+head(bg)
+
+plot(clim_mask[[1]])
+plot(bg, add=T, col="black")
+plot(m_occ, add=T, col="red")
+
+#split occurrence data into training and testing
+#randomly select 80% for training
+selected <- sample(1:nrow(m_occ), nrow(m_occ)*0.8)
+occ_train <- m_occ[selected,]
+occ_test <- m_occ[-selected,]
+
+plot(occ_train, col="blue")
+plot(occ_test, col="red", add=T)
+
+#simple modeling workflow
+#re-format data input for maxent
+cat(class(clim_mask), "", class(m_occ))
+m0 <- maxent(x=clim_mask, p=m_occ)
+
+#extract env condition for training, testing and background data
+env_occ_train <- extract(bne_stack, occ_train)
+env_occ_test <- extract(bne_stack, occ_test)
+env_bg <- extract(bne_stack, bg)
+
+#combine the conditions by row
+myPredictors <- rbind(env_occ_train, env_bg)
+
+#change matrix to dataframe
+myPredictors <- as.data.frame(myPredictors)
+head(myPredictors)
+
+# repeat the number 1 as many times as the number of rows in p, 
+# and repeat 0 for the rows of background points
+myResponse <- c(rep(1,nrow(env_occ_train)),
+                rep(0,nrow(env_bg)))
+
+mod <- maxent(x=myPredictors, p=myResponse)
+mod@lambdas
+
+#predict function
+#project model on raster layers (training layers)
+ped1 <- predict(mod, clim_mask)
+plot(ped1)
+
+ped2 <- predict(mod, env_occ_train)
+head(ped2)
+
+#model evaluation
+mod_eval_train <- dismo::evaluate(p=env_occ_train, a=env_bg, model=mod)
+print(mod_eval_train)
+
+#testing data
+mod_eval_test <- dismo::evaluate(p=env_occ_test, a=env_bg, model=mod)
+print(mod_eval_test)
+
+#compare training and testing AUC
+cat("the training AUC is:", mod_eval_train@auc, "\n")
+
+cat("the testing AUC is:", mod_eval_test@auc, "\n")
+
+#tresholds our continuous predictions of suitability into binary predictions 
+thd1 <- threshold(mod_eval_train,stat="no_omission") # 0% omission rate 
+thd2 <- threshold(mod_eval_train,stat="spec_sens") # highest TSS
+thd3 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.9) # 10% omission rate, i.e. sensitivity=0.9
+thd4 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.95) # 5% omission rate, i.e. sensitivity=0.95
+
+plot(ped1>=thd1)
+
+#model manipulations
+#change output path
+dir.create("output")
+dir.create("output/maxent_output")
+
+# to train Maxent with tabular data
+mod <- dismo::maxent(x=myPredictors, ## env conditions
+                     p=myResponse,   ## 1:presence or 0:absence
+                     path=paste0(getwd(),"/output/maxent_outputs")
+)
+
+list.files( paste0(getwd(),"/output/maxent_outputs" )  )
+
+#change default parameters
+if(!require(devtools)){
+  install.packages("devtools")
+}
+devtools::source_url("https://raw.githubusercontent.com/shandongfx/nimbios_enm/master/Appendix2_prepPara.R")
+
+#get a list of default settings
+myparameters <- prepPara(userfeatures=NULL) 
+print(myparameters)
+
+# training a maxent model with dataframes
+mod <- dismo::maxent(x=myPredictors, ## env conditions
+                     p=myResponse,   ## 1:presence or 0:absence
+                     args=myparameters  )
+
+#select features
+myparameters1 <- prepPara(userfeatures="LQ")
+mod1_lq <- maxent(x=myPredictors,
+                  p=myResponse,
+                  path=paste0(getwd(),"/output/maxent_outputs1_lq"),
+                  args=myparameters1 )
+
+#change beta-multiplier
