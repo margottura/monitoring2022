@@ -1,4 +1,5 @@
 #MaxEnt
+#https://shandongfx.github.io/NIMBioSENM/06-maxent-manipulation/index.html
 #let's load all the packages
 packages_needed <- c("raster", # for raster analysis
                      "dismo", # a collection of ENM/SDM tools
@@ -134,7 +135,7 @@ clim_mask <- mask(bne_stack, occ_buffer)
 
 #draw background samples
 set.seed(1)
-bg <- sampleRandom(x=clim_mask, size=1000, na.rm=T, sp=T)
+bg <- sampleRandom(x=clim_mask, size=700, na.rm=T, sp=T)
 head(bg)
 
 plot(clim_mask[[1]])
@@ -240,3 +241,110 @@ mod1_lq <- maxent(x=myPredictors,
                   args=myparameters1 )
 
 #change beta-multiplier
+myparameters2 <- prepPara(userfeatures="LQH", betamultiplier=0.1)
+# change beta-multiplier for all features to 0.5, the default beta-multiplier is 1
+mod2_fix <- maxent(x=myPredictors,
+                   p=myResponse,
+                   path=paste0(getwd(),"/output/maxent_outputs2_0.1"), 
+                   args=myparameters2  ) 
+
+myparameters3 <- prepPara(userfeatures="LQH", betamultiplier=10)
+mod2_relax <- maxent(x=myPredictors, p=myResponse,
+                     path=paste0(getwd(), "/output/maxent_outputs2_10"), 
+                     args=myparameters3  )
+#We can also set different beta-multiplers for different features.
+#beta_threshold= 1
+#beta_categorical=1
+#beta_lqp=1
+#beta_hinge=1`
+
+#specify projection layers
+myparameters4 <- prepPara(userfeatures="LQH",## include L, Q, H features
+                          beta_lqp=1.5,      ## use different beta-multiplier for different features
+                          beta_hinge=0.5 )
+
+mod2_complex <- maxent(x=myPredictors,
+                       p=myResponse,
+                       path=paste0(getwd(),"/output/maxent_outputs2_complex"), 
+                       args=myparameters4)
+
+#specify projection layers
+#train the model and create a prediction simultaneously
+myparameters5 <- prepPara(userfeatures="LQ",
+                          betamultiplier=1,
+                          projectionlayers=paste0(getwd(),"/data/bioclim")
+)
+
+# note: 
+# (1) the projection layers must exist in the hard disk (as relative to computer RAM); 
+# (2) the names of the layers (excluding the name extension) must match the names of the predictor variables. 
+
+#############################
+# Create Model (da rivedere)
+#############################
+
+#high AUC model
+#we simulate two size of training areas (large vs. small)
+occ_buffer<- buffer(m_occ,width=4*10^5)
+clim_mask <- mask(bne_stack, occ_buffer)
+set.seed(1)               
+bg_small <- sampleRandom(x=clim_mask,
+                         size=100,
+                         na.rm=T, #removes the 'Not Applicable' points  
+                         sp=T) # return spatial points 
+set.seed(1)
+bg_big <- sampleRandom(x=bne_stack, size=500, na.rm=T, sp=T)
+plot(bne_stack[[1]])
+points(bg_big, col="black", cex=0.5)
+points(bg_small, col="red", cex=0.5)
+
+#extracting env conditions
+env_occ_train <- extract(bne_stack, occ_train)
+env_occ_test <- extract(bne_stack, occ_test)
+
+#extracting env conditions for background
+env_bg_small <- extract(bne_stack,bg_small)  
+env_bg_big   <- extract(bne_stack,bg_big  )  
+
+# prepare data frame for maxent
+myPredictors_small <- data.frame(rbind(env_occ_train,env_bg_small))
+myPredictors_big   <- data.frame(rbind(env_occ_train,env_bg_big  ))
+
+myResponse_small <- c(rep(1,nrow(env_occ_train)),
+                      rep(0,nrow(env_bg_small))) 
+myResponse_big  <-  c(rep(1,nrow(env_occ_train)),
+                      rep(0,nrow(env_bg_big)))
+
+# set up the parameters
+myparameters <- prepPara(userfeatures="LQ",
+                         betamultiplier=1,
+                         projectionlayers=paste0(getwd(),"/data/bioclim")
+)
+
+# do the models
+
+mod_small <- dismo::maxent(x = myPredictors_small,
+                    p = myResponse_small)
+                    
+mod_big <- maxent(x=myPredictors_big,
+                       p=myResponse_big)
+
+ped_small <- predict(mod_small, clim_mask)
+ped_big <- predict(mod_big, clim_mask)
+ped_diff <- ped_small-ped_big
+ped_combined <- stack(ped_small, ped_big, ped_diff)
+names(ped_combined) <- c("small_trainingArea", "big_trainingArea", "difference")
+plot(ped_combined)
+
+#compare the AUC, extract test occ data
+mod_eval_small <- evaluate(p=env_occ_test,a=env_bg_small,model=mod_small) 
+mod_eval_big   <- dismo::evaluate(p=env_occ_test,a=env_bg_big,  model=mod_big) 
+cat("AUC of small training area is: ",mod_eval_small@auc )
+cat("AUC of big   training area is: ",mod_eval_big@auc )
+
+#model competitation
+#prepare data input for ENMeval
+
+#####################
+#da rivedere
+#####################
