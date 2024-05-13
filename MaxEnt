@@ -21,6 +21,7 @@ library(rgeos)
 library(sp)
 library(rgdal)
 library(ENMeval)
+library(geodata)
 
 if( !("rJava" %in% rownames(installed.packages()))  ){
   install.packages("rJava",repos="http://cran.r-project.org")
