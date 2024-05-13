@@ -136,7 +136,7 @@ clim_mask <- mask(bne_stack, occ_buffer)
 
 #draw background samples
 set.seed(1)
-bg <- sampleRandom(x=clim_mask, size=700, na.rm=T, sp=T)
+bg <- sampleRandom(x=clim_mask, size=500, na.rm=T, sp=T)
 head(bg)
 
 plot(clim_mask[[1]])
@@ -325,10 +325,10 @@ myparameters <- prepPara(userfeatures="LQ",
 # do the models
 
 mod_small <- dismo::maxent(x = myPredictors_small,
-                    p = myResponse_small)
-                    
+                           p = myResponse_small)
+
 mod_big <- maxent(x=myPredictors_big,
-                       p=myResponse_big)
+                  p=myResponse_big)
 
 ped_small <- predict(mod_small, clim_mask)
 ped_big <- predict(mod_big, clim_mask)
