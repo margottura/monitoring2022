@@ -13,6 +13,7 @@ setwd("C:/Documenti/Laurea magistrale/Tirocinio Duccio")
 
 #upload occurrence data from gbif
 m_occ <- read.csv("m_occ.csv", sep="\t")
+m_occ
 
 #wordlclim data
 #Brisbane wordlclim data
@@ -25,9 +26,11 @@ ext <- extent(bne_ext[1], bne_ext[2], bne_ext[3], bne_ext[4])
 
 wclim_bne <- crop(wclim_aus, ext)
 wclim_bne <- wclim_bne[[c(2,3,5,6,10,17,19)]]
+wclim_bne
 
 #create a stack of raster with bne wclim data
 bne_stack <- stack(wclim_bne)
+bne_stack
 
 #generating background points
 bg <- randomPoints(bne_stack, n=500)%>%as.data.frame()
@@ -35,16 +38,57 @@ colnames(bg) <- c("decimalLongitude", "decimalLatitude")
 bg <- bg[, c(2,1)]
 
 occurrences <- m_occ[, c("decimalLatitude", "decimalLongitude")]%>%as.data.frame()
+occurrences
 
 #extract raster values and create training data
 training <- bind_rows(occurrences, bg)%>%mutate(occ = c(rep(1, nrow(occurrences)), rep(0, nrow(bg))))
 
-training <- merge(wclim_bne, training)%>%as.data.frame()%>%tidyr::drop_na()
+#turn training data into spatial points
+coordinates(training) <- ~ decimalLongitude + decimalLatitude
+cat("the previous object is: ", class(training),"\n") 
+head(training@coords)
+crs(training)
+# Define the coordinate system that will be used
+myCRS <- CRS("+init=epsg:4326") # WGS 84
+crs(training) <- myCRS
+crs(training)
+
+raster::pairs(bne_stack,maxpixels=1000)
+
+training <- extract(bne_stack, training)
+training <- as.data.frame(training)
+training$occ <- c(rep(1, nrow(occurrences)), rep(0, nrow(bg)))
+training <- na.omit(training)
 
 head(training)
-plot(training)
 
-#model fitting with randomForest package
-#down-sample RF
-# equal number of present and background with 10 repeats
-prNum <- as.numeric(table(training$occ)["1"]) # number of presences
+#model fitting with randomForest 
+#default (classification) RF
+training$occ <- as.factor(training$occ)
+
+#default classification RF
+rf_def <- randomForest(occ~ ., data=training, ntree=1000)
+
+#predict to raster layers
+pred_def <- predict(bne_stack, rf_def, type="prob", index=2)
+
+plot(pred_def)
+
+#now RF down-sampled
+# calculate sub-samples
+prNum <- as.numeric(table(training$occ)["1"]) # number of presence records
+spsize <- c("0" = prNum, "1" = prNum) # sample size for both classes
+
+training_sampled <- do.call(rbind, lapply(split(training, training$occ), 
+                                          function(x) x[sample(1:nrow(x), spsize[as.character(x$occ[1])]),]))
+
+rf_dws <- randomForest(occ~ ., data=training_sampled, ntree=1000)
+
+# predict to raster layers
+pred_dws <-  predict(bne_stack, rf_dws, type = "prob", index = 2)
+plot(pred_dws)
+
+#let's compare the two methods
+par(mfrow = c(1, 2))
+plot(pred_def)
+plot(pred_dws)
