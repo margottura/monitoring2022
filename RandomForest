@@ -1,0 +1,50 @@
+#RandomForest
+#load required libraries
+library(spatialEco)
+library(dismo)
+library(disdat)
+library(sf)
+library(randomForest)
+library(geodata)
+library(dplyr)
+library(tidyr)
+
+setwd("C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+
+#upload occurrence data from gbif
+m_occ <- read.csv("m_occ.csv", sep="\t")
+
+#wordlclim data
+#Brisbane wordlclim data
+wclim_aus <- worldclim_country("AUS", var="bio", res=10, versione="2.1", path="C:/Documenti/Laurea magistrale/Tirocinio Duccio")
+names(wclim_aus)<- c("Annual Mean Temperature", "Mean Diurnal Range", "Isothermality", "Temperature Seasonality", "Max Temperature of Warmest Month", "Min Temperature of Coldest Month", "Temperature Annual Range", "Mean Temperature of Wettest Quarter", "Mean Temperature of Driest Quarter", "Mean Temperature of Warmest Quarter", "Mean Temperature of Coldest Quarter", "Annual Precipitation", "Precipitation of Wettest Month", "Precipitation of Driest Month", "Precipitation Seasonality", "Precipitation of Wettest Quarter", "Precipitation of Driest Quarter", "Precipitation of Warmest Quarter", "Precipitation of Coldest Quarter")
+
+#crop for Brisbane area (lat min 153, lat max 153.5, lon min -27.5, lon max -27.1)
+bne_ext <- c(153, 153.5, -27.5, -27.1)
+ext <- extent(bne_ext[1], bne_ext[2], bne_ext[3], bne_ext[4])
+
+wclim_bne <- crop(wclim_aus, ext)
+wclim_bne <- wclim_bne[[c(2,3,5,6,10,17,19)]]
+
+#create a stack of raster with bne wclim data
+bne_stack <- stack(wclim_bne)
+
+#generating background points
+bg <- randomPoints(bne_stack, n=500)%>%as.data.frame()
+colnames(bg) <- c("decimalLongitude", "decimalLatitude")
+bg <- bg[, c(2,1)]
+
+occurrences <- m_occ[, c("decimalLatitude", "decimalLongitude")]%>%as.data.frame()
+
+#extract raster values and create training data
+training <- bind_rows(occurrences, bg)%>%mutate(occ = c(rep(1, nrow(occurrences)), rep(0, nrow(bg))))
+
+training <- merge(wclim_bne, training)%>%as.data.frame()%>%tidyr::drop_na()
+
+head(training)
+plot(training)
+
+#model fitting with randomForest package
+#down-sample RF
+# equal number of present and background with 10 repeats
+prNum <- as.numeric(table(training$occ)["1"]) # number of presences
