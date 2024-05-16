@@ -90,5 +90,5 @@ plot(pred_dws)
 
 #let's compare the two methods
 par(mfrow = c(1, 2))
-plot(pred_def)
-plot(pred_dws)
+plot(pred_def, main = "RF default")
+plot(pred_dws, main = "Rf down-sampled")
