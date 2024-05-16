@@ -1,4 +1,4 @@
-#GLM
+#GLM e GAM
 #load required libraries
 library(spatialEco)
 library(dismo)
@@ -35,6 +35,8 @@ bne_stack
 bg <- randomPoints(bne_stack, n=500)%>%as.data.frame()
 colnames(bg) <- c("decimalLongitude", "decimalLatitude")
 bg <- bg[, c(2,1)]
+bg
+
 
 m_occ <- read.csv("m_occ.csv", sep="\t")
 occurrences <- m_occ[, c("decimalLatitude", "decimalLongitude")]%>%as.data.frame()
@@ -59,13 +61,47 @@ crs(training)
 env_coords <- extract(bne_stack, training)
 head(env_coords)
 
-complete_data <- rbind(conditions_occ, env_coords)
-conditions_df <- as.data.frame(conditions_occ)
 coords_df <- as.data.frame(env_coords)
 
 training_df <- as.data.frame(training)
-training_df <- na.omit(training_df)
 
+#create a dataframe with all the information
 complete_data <- cbind(training, coords_df)
 complete_data <- as.data.frame(complete_data)
 complete_data <- na.omit(complete_data)
+names(complete_data)
+
+#glm model
+glm <- glm(occ  ~ 1 + Mean.Diurnal.Range + Isothermality + Max.Temperature.of.Warmest.Month + Min.Temperature.of.Coldest.Month + Mean.Temperature.of.Warmest.Quarter + Precipitation.of.Driest.Quarter + Precipitation.of.Coldest.Quarter, data = complete_data, family = "binomial")
+
+library(ggplot2)  
+library(viridis)
+
+#create predictions plot
+predictions <- data.frame(decimalLongitude = complete_data$decimalLongitude,
+                          decimalLatitude = complete_data$decimalLatitude,
+                          predictions = predict(glm, newdata = complete_data, type = "response"))
+ggplot(predictions, aes(x = decimalLongitude, y = decimalLatitude)) +
+  geom_point(alpha = 0.3, aes(color = predictions)) +
+  scale_color_viridis_c(name = "Predictions") +
+  labs(title = "Predicted Distribution Map")
+
+
+#GAM
+if (is.element("package:mgcv", search())) 
+  detach("package:mgcv") ## make sure the mgcv package is not loaded to avoid conflicts between packages
+
+library(gam)
+
+gam <- gam(occ  ~  s(Mean.Diurnal.Range, 2) + s(Isothermality,2) + s(Max.Temperature.of.Warmest.Month, 2) + s(Min.Temperature.of.Coldest.Month,2) + s(Mean.Temperature.of.Warmest.Quarter,2) + s(Precipitation.of.Driest.Quarter,2) + s(Precipitation.of.Coldest.Quarter,2), data = complete_data, family = "binomial")
+
+plot(gam, se = T)
+
+predictions_gam <- data.frame(decimalLongitude = complete_data$decimalLongitude,
+                              decimalLatitude = complete_data$decimalLatitude,
+                              predictions = predict(gam, type = "response", newdata = complete_data))
+
+ggplot(predictions_gam, aes(x = decimalLongitude, y = decimalLatitude)) +
+  geom_point(alpha = 0.3, aes(color = predictions)) +
+  scale_color_viridis_c(name = "Predictions") +
+  labs(title = "Predicted Distribution Map for GAM Model")
